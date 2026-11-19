@@ -1,95 +1,53 @@
-# StoryWeaver AI: Illustrated Storybook Generator
+# StoryWeaver AI
 
-An end-to-end AI pipeline that transforms a **child's name, age, and story theme** into a fully narrated storybook — with LLM-generated story text, Stable Diffusion illustrations, Chatterbox TTS narration, AI ambient music, a multi-page PDF, and a narrated MP4 video.
+**Personalized, illustrated storybooks with narration, music, PDF, and video exports.**
 
----
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![Gradio](https://img.shields.io/badge/Gradio-F97316)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)
 
-## System Overview
+Enter a child's name, age, and story theme to generate a multi-page story with illustrations, spoken narration, ambient music, and synchronized subtitles.
 
-```
-INPUT:                                 OUTPUT:
-- Child's name                         - Multi-page PDF storybook
-- Age                                  - Narrated MP4 video
-- Story theme                          - Per-page SRT subtitles
-- Number of pages (2–8)               - Chatterbox TTS narration WAVs
-- (Optional) voice reference WAV       - SD illustrations per page
-                                       - Ambient background music
-                                       - evaluation_report.json
-```
+[Output preview](#output-preview) · [Features](#features) · [Quick start](#quick-start) · [Usage](#usage) · [Evaluation](#evaluation) · [Documentation](#documentation)
 
----
+## Output preview
 
-## Architecture
+### Story video
 
-```
-StoryGenerator (LLM) ──────────────────────────────────────────────────────┐
-     │  JSON: title, pages[text, illustration_prompt, mood, sound_effects]  │
-     ▼                                                                      │
-StorybookIllustrator (Stable Diffusion) ──────────────────────────────────┤
-     │  page_01.png … page_N.png (Pixar-style children's book)             │
-     ▼                                                                      │
-NarrationGenerator (Chatterbox TTS) ───────────────────────────────────────┤
-     │  narration_page_01.wav … (per-page, timed durations)                │
-     ▼                                                                      │
-SoundEngine (MusicGen + SFX mixer) ────────────────────────────────────────┤
-     │  ambient_music.wav + mixed_page_01.wav …                            │
-     ▼                                                                      │
-PDFRenderer (Pillow) + VideoRenderer (MoviePy/FFmpeg) ─────────────────────┘
-     │
-     ▼
- story.pdf  +  story.mp4  +  story.srt
-```
+A **14-second excerpt** from the saved story *Liam and the Shining Lights Home*, showing generated illustrations, camera motion, and subtitles.
 
----
+[![Animated excerpt from the generated story video, featuring a child and a puppy](docs/media/story-preview.gif)](docs/media/sample-story.mp4)
 
-## File Structure
+The GIF is silent. [Open or download the full video with narration and music](docs/media/sample-story.mp4) (23.46 seconds).
 
-```
-storyweaver-ai/
-├── README.md
-├── requirements.txt
-├── .env.example                    # Copy to .env and add your API keys
-│
-└── storybook_generator/
-    ├── app.py                      # Gradio web UI (4-step wizard)
-    ├── cli.py                      # Command-line interface
-    ├── config.py                   # StorybookConfig dataclass + .env loader
-    ├── evaluate.py                 # Automated evaluation suite (WER, latency, quality)
-    ├── DOCUMENTATION.md            # Full technical documentation
-    │
-    ├── pipeline/
-    │   ├── story_generator.py      # LLM → Storybook JSON (replaces LyricsProcessor)
-    │   ├── illustrator.py          # SD text-to-image per page (replaces BackgroundGenerator)
-    │   ├── narration_generator.py  # Chatterbox TTS per page (wraps music_generator.py)
-    │   ├── sound_engine.py         # MusicGen ambient + SFX mixing
-    │   ├── pdf_renderer.py         # Pillow multi-page PDF renderer
-    │   ├── video_renderer.py       # MoviePy Ken Burns video + text overlays
-    │   ├── subtitle_generator.py   # SRT generation (adapted from original)
-    │   ├── music_generator.py      # Chatterbox TTS + MusicGen (reused unchanged)
-    │   └── orchestrator.py         # End-to-end StorybookOrchestrator
-    │
-    ├── utils/
-    │   └── story_schemas.py        # Storybook + StoryPage dataclasses
-    │
-    └── assets/
-        └── sfx/                    # Sound effect WAVs (forest, magic, ocean, …)
+### Story illustrations
 
-outputs/
-├── images/          # SD illustrations (page_01.png …)
-├── audio/
-│   ├── narration/   # Chatterbox TTS WAVs per page
-│   ├── mixed/       # narration + ambient + SFX per page
-│   └── ambient_music.wav
-├── pdf/             # Multi-page PDF storybook
-├── video/           # Narrated MP4 + SRT subtitles
-└── evaluation_report.json
-```
+| Page 1 | Page 2 |
+|:---:|:---:|
+| <img src="docs/media/page-01.png" alt="Generated story illustration of a child and a puppy on a woodland path" width="380"> | <img src="docs/media/page-02.png" alt="Generated story illustration of puppies in a cozy room under a starry sky" width="380"> |
 
----
+[Read the sample PDF storybook](docs/media/sample-storybook.pdf) · [View the subtitles](docs/media/sample-story.srt)
 
-## Installation
+These are saved outputs from the project. The GIF and compressed video preserve the generated content, including its illustration and transcription imperfections.
 
-### 1. Set Up Environment
+## Features
+
+- **Personalized stories:** Generate 2–8 pages from a name, age, and theme.
+- **Illustrations:** Create images with Stable Diffusion and story-specific prompts.
+- **Narration:** Synthesize page audio with Chatterbox TTS and optional voice cloning.
+- **Sound design:** Mix narration with MusicGen ambient music and optional sound effects.
+- **Exports:** Produce an illustrated PDF, a narrated MP4, and SRT subtitles.
+- **Evaluation:** Measure narration word error rate, latency, and structural story checks.
+
+## Quick start
+
+### Requirements
+
+- A Python environment compatible with the packages in [requirements.txt](requirements.txt).
+- FFmpeg: `brew install ffmpeg` on macOS or `sudo apt install ffmpeg` on Ubuntu/Debian.
+- An LLM API key for story generation; a GPU is recommended for illustration and audio models.
+
+### Installation
 
 ```bash
 git clone https://github.com/sayushmaharjan/storyweaver-ai.git
@@ -97,209 +55,139 @@ cd storyweaver-ai
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 2. Set API Keys
-
-Copy `.env.example` to `.env` in the `storyweaver-ai/` root, then add your API keys:
-
-```bash
 cp .env.example .env
 ```
 
-```env
-HF_TOKEN=hf_...
-GROQ_API_KEY=gsk_...
-ANTHROPIC_API_KEY=sk-ant-...   # optional
+On Windows, activate the environment with `.venv\Scripts\activate`.
+
+Set your provider credentials in `.env`. For the included Groq configuration:
+
+```dotenv
+GROQ_API_KEY=your_groq_api_key
 LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_MODEL=llama-3.1-8b-instant
-DEVICE=mps                     # or cuda / cpu
+DEVICE=cpu
 OUTPUT_DIR=outputs
 ```
 
-Supported LLM providers: **Groq**, **Anthropic Claude**, **HuggingFace Inference API**, **OpenAI-compatible** endpoints, and local Transformers models.
-
----
-
-## Usage
-
-### Web UI (Gradio)
+Use `DEVICE=mps` for Apple Silicon or `DEVICE=cuda` for an NVIDIA GPU. Other supported providers include Anthropic, Hugging Face, and OpenAI-compatible endpoints; see [.env.example](.env.example) for the available key fields.
 
 ```bash
 python storybook_generator/app.py
-# → http://localhost:7860
 ```
 
-### Command Line
+Open `http://localhost:7860`.
+
+## Usage
+
+### Web interface
+
+1. Enter a child's name and age.
+2. Choose a theme and number of pages.
+3. Optionally provide a reference voice and adjust the LLM settings.
+4. Generate the storybook, then preview and download the PDF and video.
+
+### Command line
 
 ```bash
-# Basic
 python storybook_generator/cli.py \
-    --name Lily --age 5 \
-    --theme "a little dragon who learns to share"
-
-# With voice cloning
-python storybook_generator/cli.py \
-    --name Ben --age 4 \
-    --theme "bunny on the moon" \
-    --pages 6 \
-    --voice-ref /path/to/parent_voice.wav
-
-# Explicit API
-python storybook_generator/cli.py \
-    --name Sofia --age 7 \
-    --theme "a princess who loves science" \
-    --pages 6 \
-    --model llama-3.1-8b-instant \
-    --api-key $GROQ_API_KEY \
-    --base-url https://api.groq.com/openai/v1
+  --name Lily --age 5 \
+  --theme "a little dragon who learns to share" \
+  --pages 4
 ```
+
+Add `--voice-ref /path/to/reference.wav` for a reference voice, or use `--output my-story` to change the output directory.
 
 ### Python API
 
 ```python
+from storybook_generator.config import StorybookConfig
 from storybook_generator.pipeline.orchestrator import StorybookOrchestrator
 
-orch = StorybookOrchestrator(
-    api_key="gsk_...",
-    device="mps",
-    output_dir="outputs",
-    llm_base_url="https://api.groq.com/openai/v1",
-    llm_model="llama-3.1-8b-instant",
+config = StorybookConfig.from_env()
+creator = StorybookOrchestrator(
+    api_key=config.best_api_key(),
+    device=config.device,
+    output_dir=config.output_dir,
+    llm_base_url=config.llm_base_url,
+    llm_model=config.llm_model,
 )
-
-result = orch.generate_storybook(
+result = creator.generate_storybook(
     child_name="Lily",
     age=5,
     theme="a little dragon who learns to share",
     num_pages=4,
 )
-
-print(result["pdf_path"])    # outputs/pdf/lily_s_adventure.pdf
-print(result["video_path"])  # outputs/video/lily_s_adventure.mp4
+print(result["pdf_path"])
+print(result["video_path"])
 ```
 
----
+## How it works
 
-## Pipeline Steps
+```text
+Name + age + theme
+    --> LLM story and illustration prompts
+    --> Stable Diffusion illustrations
+    --> Chatterbox narration + MusicGen ambient audio + sound effects
+    --> Audio mixing + PDF rendering + video rendering
+    --> PDF + MP4 + SRT
+```
 
-1. **Story Generation** — LLM produces structured JSON: title, per-page text, illustration prompts, moods, and sound effect tags.
-2. **Illustration** — Stable Diffusion generates one Pixar-style children's book image per page. Fallback: mood-colored gradient.
-3. **Narration** — Chatterbox TTS synthesizes per-page narration WAVs. Optional voice cloning via a reference WAV.
-4. **Ambient Music** — MusicGen generates a mood-matched ambient loop (loopable, slow, lullaby-style).
-5. **Audio Mixing** — Per-page final audio: narration (100%) + ambient (35%) + SFX (25%).
-6. **PDF Rendering** — Pillow assembles a real multi-page PDF: illustration (top 60%) + text (bottom 40%) per page.
-7. **Video Rendering** — MoviePy/FFmpeg fallback compiles a narrated MP4: title card → Ken Burns zoom per page with dynamic chunked subtitles → end card. No ImageMagick dependency!
-8. **Subtitles** — Standalone SRT file generated with precise chunked timestamps matching the video's dynamic text.
+Generated files are stored under `outputs/`:
 
----
+```text
+outputs/
+├── images/                 # Per-page illustrations
+├── audio/
+│   ├── narration/          # Per-page speech
+│   ├── mixed/              # Speech, music, and effects
+│   └── ambient_music.wav
+├── pdf/                    # Illustrated storybooks
+├── video/                  # Narrated videos and subtitles
+└── evaluation_report.json  # Created by the evaluator
+```
 
-## Evaluation Suite
+## Evaluation
 
-Run the automated evaluation suite to benchmark pipeline quality:
+Install the additional evaluation dependencies, then run:
 
 ```bash
+pip install openai-whisper jiwer
 python storybook_generator/evaluate.py \
-    --name Lily --age 5 \
-    --theme "a little dragon who learns to share" \
-    --pages 3
+  --name Lily --age 5 \
+  --theme "a little dragon who learns to share" \
+  --pages 2
 ```
 
-The suite measures **4 dimensions** of quality:
+The [saved evaluation report](docs/media/evaluation-report.json) records the following results for a separate two-page story about Lily and a dragon:
 
-| Metric | Method | Description |
-|--------|--------|-------------|
-| **WER** (Word Error Rate) | Whisper `tiny` → `jiwer` | How accurately Chatterbox TTS speaks each page's text |
-| **TTS Accuracy** | `1 − WER` | Percentage of words correctly synthesized |
-| **LLM Latency** | `time.perf_counter()` | Story generation wall-clock time (seconds) |
-| **TTS Latency/page** | `time.perf_counter()` | Per-page narration synthesis time (seconds) |
-| **Story Quality Score** | 5 binary checks × 2 pts | Structural and semantic quality of the LLM output (0–10) |
+| Metric | Recorded result |
+|---|---:|
+| Mean page word error rate | 0.96% |
+| Mean page transcription accuracy | 99.04% |
+| Story generation latency | 1.30 s |
+| Mean narration latency per page | 66.41 s |
+| Structural story checks | 10/10 |
 
-### Story Quality Checks (0–10 score)
-
-| Check | Points | Criterion |
-|-------|--------|-----------|
-| Child name in story | 2 | Child's name appears in story text |
-| Theme reflected | 2 | At least one theme keyword appears |
-| Correct page count | 2 | LLM returned exactly the requested number of pages |
-| Sentence length OK | 2 | Each page has 2–5 sentences |
-| Bedtime ending | 2 | Last page mood is `calm`, `sleepy`, or `happy` |
-
-### Sample Output
-
-```
-============================================================
-  EVALUATION RESULTS SUMMARY
-============================================================
-  Metric                                   Value
-  ---------------------------------------------
-  LLM Story Generation Latency              1.3s
-  Avg TTS (Narration) Latency/page         66.4s
-  Average WER                              1.0%
-  Average TTS Accuracy                     99.0%
-  Story Quality Score                       10/10
-============================================================
-```
-
-Results are also saved to `outputs/evaluation_report.json`.
-
----
-
-## Key Features
-
-- **LLM story generation** via Groq, Anthropic Claude, HuggingFace, or any OpenAI-compatible API
-- **Stable Diffusion illustrations** with children's-book style prefix and seed locking for reproducibility
-- **Chatterbox TTS narration** with optional voice cloning from a 10–30s reference WAV
-- **AI ambient music** via MusicGen, mood-matched to the story's emotional arc
-- **Per-page SFX mixing** (forest, magic, ocean, etc.) driven by LLM-tagged keywords
-- **Multi-page PDF** rendered entirely with Pillow — no external PDF library needed
-- **Dynamic Narrated Video** with Ken Burns zoom, fast PIL-based chunked subtitles, title card, and end card — **100% ImageMagick-free!**
-- **Automated evaluation** — Exact WER (Insertions/Deletions/Substitutions), accuracy, latency, and story quality in one command
-- **Graceful fallbacks** throughout — pipeline completes even if SD, MusicGen, or TTS fail
-- **Seed-locked illustrations** — re-running the same story produces identical images
-
----
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `HF_TOKEN` | HuggingFace token (for HF Inference API or local models) |
-| `GROQ_API_KEY` | Groq API key (`gsk_...`) |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key |
-| `LLM_BASE_URL` | LLM endpoint URL (default: Groq) |
-| `LLM_MODEL` | Model name (default: `llama-3.1-8b-instant`) |
-| `DEVICE` | `mps`, `cuda`, or `cpu` |
-| `OUTPUT_DIR` | Output directory (default: `outputs`) |
-
----
+The structural score checks the name, theme, page count, sentence length, and ending mood. These results describe that saved run and are separate from the Liam video shown above.
 
 ## Troubleshooting
 
-### "Chatterbox not installed" / TTS fails
-The evaluator and narration generator will write silence files and continue. Install Chatterbox:
-```bash
-pip install chatterbox-tts
-```
+| Issue | What to check |
+|---|---|
+| Missing API key | Fill in `.env` for the selected LLM provider. |
+| GPU memory exhausted | Lower the workload or use `DEVICE=cpu` for supported components. |
+| Gradient images | Inspect the illustration logs; gradient pages are the fallback when generation fails. |
+| Silent narration | Check that `chatterbox-tts` and its models load successfully. |
+| Evaluation imports fail | Install `openai-whisper` and `jiwer`. |
 
-### "CUDA / MPS out of memory"
-Set `DEVICE=cpu` in `.env`. SD and MusicGen will be slower but will run.
+## Documentation
 
-### "SD model not loading" / Gradient fallbacks
-Stable Diffusion requires ~4 GB VRAM. On CPU, it will be slow. The pipeline produces gradient fallbacks automatically.
-
-### Whisper not found (WER evaluation)
-```bash
-pip install openai-whisper
-```
-
-### jiwer not found (WER evaluation)
-```bash
-pip install jiwer
-```
-
----
+- [Technical documentation](storybook_generator/DOCUMENTATION.md): architecture, module reference, and configuration.
+- [Environment template](.env.example).
+- [Sample provenance](docs/media/README.md): source files and video conversion details.
+- [Dependencies](requirements.txt).
 
 ## License
 
-MIT License. This project is for educational and research purposes.
+The project documentation designates the code as MIT-licensed for educational and research use. Model weights and third-party assets remain subject to their own terms.
